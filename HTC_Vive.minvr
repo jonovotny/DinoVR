@@ -1,0 +1,54 @@
+<MinVR>
+	<FreeGLUTPlugin pluginType="MinVR_FreeGLUT"/>
+	<OpenGLPlugin pluginType="MinVR_OpenGL"/>
+    <OpenVRPlugin pluginType="MinVR_OpenVR"/>	
+	<VRPNPlugin pluginType="MinVR_VRPN"/>	
+
+	  <RGBBits>8</RGBBits>
+	  <AlphaBits>8</AlphaBits>
+	  <DepthBits>24</DepthBits>
+	  <StencilBits>8</StencilBits>
+	  <FullScreen>0</FullScreen>
+	  <Resizable>1</Resizable>
+	  <AllowMaximize>1</AllowMaximize>
+	  <Visible>1</Visible>
+	  <SharedContextGroupID>-1</SharedContextGroupID>
+	  <ContextVersionMajor>3</ContextVersionMajor>
+	  <ContextVersionMinor>3</ContextVersionMinor>
+	  <UseGPUAffinity>1</UseGPUAffinity>
+	  <UseDebugContext>0</UseDebugContext>
+	  <MSAASamples>1</MSAASamples>
+	  <QuadBuffered>0</QuadBuffered>
+	  
+	  <StereoFormat>Mono</StereoFormat>
+  
+	<VRSetups>
+		<Desktop hostType="VRStandAlone">
+	      <FreeGLUTToolkit windowtoolkitType="VRFreeGLUTWindowToolkit"/>
+	      <OpenGLToolkit graphicstoolkitType="VROpenGLGraphicsToolkit"/>
+	      <RootNode displaynodeType="VRGraphicsWindowNode">
+			<HTC displaynodeType="VROpenVRNode">
+				<HideTracker>1</HideTracker>
+				<ReportStatePressed>1</ReportStatePressed>
+				<ReportStateTouched>1</ReportStateTouched>
+				<ReportStateAxis>1</ReportStateAxis>
+				<ReportStatePose>1</ReportStatePose>
+				<DrawHMDOnly>1</DrawHMDOnly>
+				<MSAA_buffers>4</MSAA_buffers>	
+				<WindowHeight>1024</WindowHeight>
+				<WindowHeight>768</WindowHeight>
+			</HTC>
+		</RootNode>
+		
+		<Keyboard inputdeviceType="VRVRPNButtonDevice">
+      <VRPNDeviceName type="string">Keyboard0@localhost:3883</VRPNDeviceName>
+	<EventsToGenerate type="stringarray">
+NAN,NAN,Kbd1,Kbd2,Kbd3,Kbd4,Kbd5,Kbd6,Kbd7,Kbd8,Kbd9,Kbd0,NAN1,NAN2,KbdBackspace,NAN,KbdQ,KbdW,KbdE,KbdR,KbdT,KbdY,KbdU,KbdI,KbdO,KbdP,NAN3,NAN4,KbdEnter,KbdCtrl,KbdA,KbdS,KbdD,KbdF,KbdG,KbdH,KbdJ,KbdK,KbdL,NAN5,NAN6,NAN7,KbdShift,NAN8,KbdZ,KbdX,KbdC,KbdV,KbdB,KbdN,KbdM,NAN9,NAN10,NAN11,KbdShift,NAN12,NAN,KbdSpace,NAN13,NAN,NAN,NAN,NAN,NAN,NAN,NAN,NAN,NAN,NAN,NAN,NAN14,Kbd7,KbdUp,Kbd9,NAN15,KbdLeft,Kbd5,KbdRight,NAN16,Kbd1,KbdDown,Kbd3,Kbd0 </EventsToGenerate>
+    </Keyboard>
+		</Desktop>
+		
+		
+	</VRSetups>
+	
+	
+</MinVR>
