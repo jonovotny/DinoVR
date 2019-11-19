@@ -152,7 +152,7 @@ if (NOT ${glm_FOUND})
     ExternalProject_Download(
         glm 
         GIT_REPOSITORY "https://github.com/g-truc/glm.git" 
-        GIT_TAG master
+        GIT_TAG 0.9.9.6
     )
     ExternalProject_BuildAndInstallNow(
         glm
@@ -205,5 +205,5 @@ if (NOT APPLE)
     target_link_libraries(${PROJECT_NAME} PUBLIC GLEW::GLEW)
 endif()
 
-file(COPY ${resource_files} DESTINATION ${CMAKE_BINARY_DIR}/bin)
-file(COPY data/active-dataset.out DESTINATION ${CMAKE_BINARY_DIR}/bin)
+#file(COPY ${resource_files} DESTINATION ${CMAKE_BINARY_DIR}/bin)
+#file(COPY data/active-dataset.out DESTINATION ${CMAKE_BINARY_DIR}/bin)
