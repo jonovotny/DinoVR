@@ -111,13 +111,16 @@ set(resource_files
   desktop.xml
 )
 
+source_group("Header Files" FILES ${header_files})
+source_group("Source Files" FILES ${source_files})
+
 #set_source_files_properties(${extra_files} PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties(vertex.h GLUtil.h PROPERTIES HEADER_FILE_ONLY TRUE)
 
 #---------------------- Define the Target ----------------------
 #set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -std=c++14)
 
-add_executable(${PROJECT_NAME} ${source_files})
+add_executable(${PROJECT_NAME} ${header_files} ${source_files})
 
 
 
