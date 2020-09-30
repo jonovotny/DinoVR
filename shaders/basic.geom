@@ -69,28 +69,28 @@ void main ()
   
   bool inLayer = false;
   if (direction == 0) {
-	  if (mod(layers, 2) == 0 && splitPos.z > 0.045) {
+	  if ((layers & int(1)) == 0 && splitPos.z > 0.045) {
 		inLayer = true;
 	  }
-	  if (mod(layers/2, 2) == 0 && splitPos.z > 0.03 && splitPos.z < 0.045) {
+	  if ((layers & int(2)) == 0 && splitPos.z > 0.03 && splitPos.z < 0.045) {
 		inLayer = true;
 	  }
-	  if (mod(layers/4, 2) == 0 && splitPos.z > 0.015 && splitPos.z < 0.03) {
+	  if ((layers & int(4))== 0 && splitPos.z > 0.015 && splitPos.z < 0.03) {
 		inLayer = true;
 	  }
-	  if (mod(layers/8, 2) == 0 && splitPos.z < 0.015) {
+	  if ((layers & int(8)) == 0 && splitPos.z < 0.015) {
 		inLayer = true;
 	  }
 }
 
   if (direction == 1) {
-	  if (mod(layers, 2) == 0 && splitPos.y > 0.02) {
+	  if ((layers & int(1)) == 0 && splitPos.y > 0.02) {
 		inLayer = true;
 	  }
-	  if (mod(layers/2, 2) == 0 && splitPos.y > -0.02 && splitPos.y <= 0.02) {
+	  if ((layers & int(4)) == 0 && splitPos.y > -0.02 && splitPos.y <= 0.02) {
 		inLayer = true;
 	  }
-	  if (mod(layers/4, 2) == 0 && splitPos.y < -0.02) {
+	  if ((layers & int(8))== 0 && splitPos.y < -0.02) {
 		inLayer = true;
 	  }
 }

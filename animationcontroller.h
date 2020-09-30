@@ -21,7 +21,15 @@ public:
   void setFrame(int frame);
 
   int getFrame();
-  
+
+  //we need to add an extra function for retrieving the current frame as getFrame advances the currentFrame.
+  int getCurrentFrame() {
+	  return currFrame;
+  }
+  //we also need to know when toggle pauses the animation to sync the frame
+  bool isPlaying() {
+	  return playing;
+  }
   void setSpeed(float speed);
   float getSpeed();
   void increaseSpeed();
