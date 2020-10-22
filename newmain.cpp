@@ -77,33 +77,7 @@ enum SLICEMODE {
 	SLICE_HOLD
 };
 
-//Note VRMatrix4 can be used with normal output
-// e.g. std::cerr << m ;
-//I would remove this function completely
-/*void printMatrix4(VRMatrix4 m){
-  for(int i = 0; i < 4; i++){
-	for(int j = 0; j < 4; j++){
-	  printf("%6.2f ", m[i][j]);
-	}
-	printf("\n");
-  }
-}*/
-
-//Note there is a function from glm to print a matrix or vector.
-//so i would remove the function to print
-//#include <glm/gtx/string_cast.hpp>
-//glm::to_string(mat)
-void printMat4(glm::mat4 m) {
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			printf("%6.2f ", m[j][i]);
-		}
-		printf("\n");
-	}
-}
-
-
-enum struct Mode { STANDARD, ANIMATION, FILTER, SLICES, PREDICT, CLUSTER, PATHSIZE, SIMILARITY };
+enum struct Mode { STANDARD, SIMILARITY };
 
 class MyVRApp : public VREventHandler, public VRRenderHandler, public UpdateChecker, public VRInputDevice {
 public:
@@ -116,7 +90,6 @@ public:
 
 		std::cout << _vrMain->getConfig()->printStructure() << std::endl;
 
-		//_config = std::make_unique<Config>("active.config");
 		std::string config_path = "active.config";
 		std::cout << "Default config: active.config" << std::endl;
 		if (argc >= 3 && argv[3]) {
@@ -130,20 +103,10 @@ public:
 		printf("GL Version %s.\n", s);
 
 		_pm = new PointManager(); //initializes a point manager
-		//_pm->ReadFile("data/slices-68-trimmed.out");
 		_pm->ReadFile(_config->GetValue("Data", "active-dataset.out"));
-		//_pm->ReadDistances(_config->GetValue("Distances", "distances.out"));
 		printf("Loaded file with %d timesteps.\n", _pm->getLength());
 		std::cout << _pm->getLength() << std::endl;
-		//_pm->ReadMoVMFs("paths.movm");
-		/*std::string clusterFile = _config->GetValue("Clusters", "active.clusters");
-		if (clusterFile != ""){
-		  _pm->ReadClusters(clusterFile);
-		}
-		std::string pathlineFile = _config->GetValue("Pathlines", "active.pathlines");
-		if (pathlineFile != ""){
-		  _pm->ReadPathlines(pathlineFile);
-		}*/
+
 		_pm->colorByCluster = true;
 		_pm->simEval = new PathAlignmentSimilarityEvaluator();
 		_pm->direction = std::stoi(_config->GetValue("direction", "0"), NULL);
@@ -188,12 +151,14 @@ public:
 		VRDataIndex di(eventname);
 		std::vector<float> t{ transform, transform + 16 };
 		di.addData("Transform", t);
+		_events_out.push_back(di);
 	}
 
 	void addVectorEvent(std::string eventname, float * vec) {
 		VRDataIndex di(eventname);
 		std::vector<float> t{ vec, vec + 4 };
 		di.addData("Vector", t);
+		_events_out.push_back(di);
 	}
 
 	void addKeyEvent(std::string name) {
@@ -250,135 +215,6 @@ public:
 		}
 	}
 
-	void loadStuff1() {
-		std::ofstream file;
-		file.open(presets[currentPreset]);
-		if (file.good()) {
-			for (int i = 0; i < 4; i++) {
-				for (int j = 0; j < 4; j++) {
-					file << _owm[i][j] << " ";
-				}
-			}
-			file << std::endl;
-			file << _pm->showSurface << _pm->surfaceMode << std::endl;
-			file << _pm->pointSize << std::endl;
-			file << (_pm->layers & LAYER1) << " " << (_pm->layers & LAYER2) << " " << (_pm->layers & LAYER3) << " " << (_pm->layers & LAYER4) << std::endl;
-			file << _fmv.showStained << _fmv.sweepMode << std::endl;
-			if (_pm->similarityReset) {
-				file << -1 << 0 << std::endl;
-			}
-			else {
-				file << _pm->similaritySeedPoint << " " << _similarityCount << std::endl;
-			}
-			file << ac.getFrame();
-			file.close();
-		}
-	}
-
-	void loadStuff2() {
-		std::fstream file;
-		std::string line;
-		file.open(presets[currentPreset], std::ios::in);
-		if (file.good()) {
-
-			std::getline(file, line);
-			std::istringstream iss(line);
-			float m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16;
-			iss >> m1 >> m2 >> m3 >> m4 >> m5 >> m6 >> m7 >> m8 >> m9 >> m10 >> m11 >> m12 >> m13 >> m14 >> m15 >> m16;
-			_owm = glm::mat4(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16);
-
-			std::getline(file, line);
-			std::istringstream iss0(line);
-			int showsurf, surfmod;
-			iss0 >> showsurf;
-			if (showsurf == 1) {
-				_pm->showSurface = true;
-			}
-			else {
-				_pm->showSurface = false;
-			}
-			_pm->surfaceMode = surfmod;
-
-			std::getline(file, line);
-			std::istringstream iss2(line);
-			float pointsize;
-			iss2 >> pointsize;
-			_pm->pointSize = pointsize;
-
-			std::getline(file, line);
-			std::istringstream iss3(line);
-			int l1, l2, l3, l4;
-			iss3 >> l1 >> l2 >> l3 >> l4;
-			_pm->layers = l1 + l2 + l3 + l4;
-
-			std::getline(file, line);
-			std::istringstream iss4(line);
-			int showsweep, sweepmod;
-			iss4 >> showsweep >> sweepmod;
-			if (showsweep == 1) {
-				_fmv.showStained = true;
-			}
-			else {
-				_fmv.showStained = false;
-			}
-			_fmv.sweepMode = sweepmod;
-
-			std::getline(file, line);
-			std::istringstream iss5(line);
-			int id;
-			float count;
-			iss5 >> id >> count;
-
-			_pm->ClearPathlines();
-			_pm->ResetPrediction();
-			_pm->clustering = false;
-			_pm->currentCluster = -1;
-			_pm->drawAllClusters = false;
-			_pm->pathlineMin = 0.0;
-			_pm->pathlineMax = 1.0;
-			_pm->colorBySimilarity = false;
-
-			if (id > -1) {
-				_similarityPreset = true;
-				_similarityId = id;
-				_similarityCount = count;
-			}
-
-			std::getline(file, line);
-			std::istringstream iss6(line);
-			int frame;
-			iss6 >> frame;
-			if (frame > -1) {
-				ac.setFrame(frame);
-			}
-			ac.pause();
-			
-			file.close();
-		}
-		else {
-			_owm = _owmDefault;
-			_pm->showSurface = false;
-			_fmv.showStained = false;
-			_fmv.sweepMode = 0;
-			_pm->pointSize = 0.0004;
-			_pm->surfaceMode = 0;
-
-			_pm->ClearPathlines();
-			_pm->ResetPrediction();
-			_pm->clustering = false;
-			_pm->currentCluster = -1;
-			_pm->drawAllClusters = false;
-			_pm->pathlineMin = 0.0;
-			_pm->pathlineMax = 1.0;
-			_pm->colorBySimilarity = false;
-
-			_pm->layers = 0;
-
-			ac.setFrame(0);
-			ac.pause();
-		}
-	}
-
 	void setPreset(int preset) {
 		if (preset >= 5) {
 			currentPreset = 0;
@@ -413,12 +249,15 @@ public:
 	}
 
 	void handleLocalEvents(const VRDataIndex &event) {
+		std::string eventname = event.getName();
+
 		//These events should be syncronized but we remap to syncronized ones 
 		//This makes it easier as in some cases it requires more local states 
 		//and it also helps to keep the whitelist smaller
-		replaceEventsForWandAndController(event.getName());
+		replaceEventsForWandAndController(eventname);
 
-		std::string eventname = event.getName();
+		//checking if left - right controller names have to be switched
+		checkControllers(eventname);
 
 		//instead of syncing the space key event we add an extra event to make sure it stops at the same frame
 		if (eventname == "KbdSpace_Down" || eventname == "Wand_Select_Down" || eventname == lcontrol + "_GripButton_Down") {
@@ -430,12 +269,79 @@ public:
 			}
 		}
 
-		//checking if left - right controller names have to be switched
-		checkControllers(eventname);
+		//This is the event to trigger the selection of the closest points.
+		//It needed to be remapped from KbdLeft_Down
+		if (event.getName() == "KbdC_Down") {
+			if (mode == Mode::SIMILARITY) {
+				VRDataIndex di("FindClosestPoints");
+				glm::vec4 wt = getWandtipInModel();
+				float* vec = glm::value_ptr(wt);
+				std::vector<float> t{ vec, vec + 4 };
+				di.addData("wand", t);
+				di.addData("time", time);
+				di.addData("similarityCount", (int) _similarityCount);
+				_events_out.push_back(di);
+			}
+		}
 
+		//This is how someone can propagate its cursor and its wandtip
+		if (event.getName() == rcontrol + "_ApplicationMenuButton_Down") {
+			controlCursor = true;
+			addKeyEvent("drawCursorOn");
+		}
+		else if (event.getName() == rcontrol + "_ApplicationMenuButton_Up") {
+			controlCursor = false;
+			addKeyEvent("drawCursorOff");
+		}
+
+		//This controls the wand movement and updates different matrices depending on the current mode.
+		if (event.getName() == "Wand0_Move" || event.getName() == rcontrol + "_Move") { //Set up for Wand Movement
+			std::vector<float> h = event.getValue("Transform");
+			glm::mat4 new_wandPos = glm::mat4(h[0], h[1], h[2], h[3],
+				h[4], h[5], h[6], h[7],
+				h[8], h[9], h[10], h[11],
+				h[12], h[13], h[14], h[15]);
+
+			//if in moving mode we update the local view of the model (owm)
+			if (_moving) {
+				_owm = new_wandPos / _wandPos * _owm;
+			}
+
+			//if in slicing mode we update the slice transformation in model coordinates
+			if (_slice_mode == SLICE) {
+				glm::vec3 up = glm::vec3(glm::inverse(_owm) * new_wandPos[1]);
+				up = glm::normalize(up);
+				glm::vec3 modelUp = glm::inverse(getModelMatrix()) * glm::vec4(up, 0.0);
+				float offset = -glm::dot(glm::vec3(getWandtipInModel()), modelUp);
+				glm::vec4 cuttingPlane_tmp = glm::vec4(modelUp.x, modelUp.y, modelUp.z, offset);
+				addVectorEvent("CuttingPlane", glm::value_ptr(cuttingPlane_tmp));
+			}
+
+			//we compute the wand position in model coordinates. This is the only time it needs to be computed as it only updates when the wand moves
+			glm::vec4 wt = getWandtipInModel();
+
+			//in case the cursor is not drawn by another user we keep our wandtip. Otherwise it will be set by the event WandTip
+			if (!drawCursor) {
+				_wandTip = wt;
+			}
+			//this user is controling the wand for all other users
+			if (controlCursor) {
+				//we therefore propagate the wandtip through an event
+				addVectorEvent("WandTip", glm::value_ptr(wt));
+				//and we also propagate the cursormatrix so that it can be drawn for all users
+				glm::mat4 cp = glm::inverse(_owm) * _wandPos;
+				addTransformEvent("CursorMat", glm::value_ptr(cp));
+			}
+
+			//we also update the wandpos for the current user
+			_wandPos = new_wandPos;
+		}
+
+		//exiting the applicatiopn
 		if (eventname == "KbdEsc_Down") {
 			_quit = true;
 		}
+		//changing the slice_mode. This is a local mode.
 		else if (eventname == "Kbd6_Down") {
 			if (_slice_mode == NO_SLICE) {
 				_slice_mode = SLICE;
@@ -449,20 +355,19 @@ public:
 				_slice_mode = SLICE_HOLD;
 			}
 		}
+		//moving the model. This is local only and does not move the model for other users
 		else if (eventname == "MouseBtnLeft_Down" || eventname == "Wand_Bottom_Trigger_Down" || eventname == rcontrol + "_Axis1Button_Down") {
 			_moving = true;
 		}
 		else if (eventname == "MouseBtnLeft_Up" || eventname == "Wand_Bottom_Trigger_Up" || eventname == rcontrol + "_Axis1Button_Up") {
 			_moving = false;
 		}
-		else if (eventname == "Wand_Joystick_Press_Down") {
-			_movingSlide = true;
-		}
+		//This is used to release the holds for playback. Playback should be implemented differently
 		else if (eventname == "Wand_Joystick_Press_Up") {
-			_movingSlide = false;
 			addKeyEvent("ReleaseHolds");
 		}
 		//These are local trigger events and only affect the trigger
+		//not sure what right_trigger is used for. Seems kind of complicated to toggle the _moving flag
 		else if (eventname == rcontrol + "_Trigger1") {
 			float analog = event.getValue("AnalogValue");
 			if (right_trigger == false && analog == 1.0f) {
@@ -476,6 +381,7 @@ public:
 		}
 
 		//Trackpads are only important for getting the right button press. They do not need to be syncronized
+		//Also not sure what they are used for. Seems kind of complicated as well.
 		else if (event.getName() == rcontrol + "_TrackPad0_X" || event.getName() == rcontrol + "_Joystick0_X") {
 			right_trackPad0_X = event.getValue("AnalogValue");
 			right_trackPad0_time = secs;
@@ -561,9 +467,6 @@ public:
 		else if (eventname == "KbdS_Down") {
 			_pm->cutOnOriginal = !_pm->cutOnOriginal;
 		}
-		else if (eventname == "KbdT_Down") {
-			loadStuff1();
-		}
 		else if (eventname == "KbdI_Down") {
 			_pm->pathlineMin += 0.05;
 		}
@@ -575,9 +478,6 @@ public:
 		}
 		else if (eventname == "KbdJ_Down") {
 			_pm->pathlineMax -= 0.05;
-		}
-		else if (eventname == "KbdR_Down") {
-			loadStuff2();
 		}
 		else if (eventname == "KbdW_Down") {
 			setPreset(currentPreset - 1);
@@ -616,31 +516,7 @@ public:
 			if (mode == Mode::STANDARD) {
 				_pm->pointSize /= 1.3;
 			}
-			if (mode == Mode::ANIMATION) {
-				ac.decreaseSpeed();
-			}
-			if (mode == Mode::SLICES) {
-				_slicer->addStart(.001);
-				_pm->SetFilter(_slicer);
-			}
-			if (mode == Mode::FILTER) {
-				motionThreshold *= 1.414;
-				_pm->SetFilter(new MotionFilter(motionThreshold));
-			}
-			if (mode == Mode::PREDICT) {
-				_placeClusterSeed = false;
-			}
-			if (mode == Mode::CLUSTER && iterateClusters) {
-				_pm->currentCluster--;
-				if (_pm->currentCluster < 0) {
-					_pm->currentCluster = _pm->clusters.size() - 1;
-				}
-				_pm->clustersChanged = true;
-			}
-			if (mode == Mode::PATHSIZE) {
-				_pm->pathlineMin -= 0.04;
-			}
-			if (mode == Mode::SIMILARITY) {
+			else if (mode == Mode::SIMILARITY) {
 				_similarityCount /= 1.2;
 				_pm->ExpandClosestPoints(_similarityCount);
 			}
@@ -649,46 +525,14 @@ public:
 			if (mode == Mode::STANDARD) {
 				_pm->pointSize *= 1.3;
 			}
-			if (mode == Mode::ANIMATION) {
-				ac.increaseSpeed();
-			}
-			if (mode == Mode::SLICES) {
-				_slicer->addStart(-.001);
-				_pm->SetFilter(_slicer);
-			}
-			if (mode == Mode::FILTER) {
-				motionThreshold /= 1.414;
-				_pm->SetFilter(new MotionFilter(motionThreshold));
-			}
-			if (mode == Mode::PREDICT) {
-				_placeClusterSeed = true;
-			}
-			if (mode == Mode::CLUSTER && iterateClusters) {
-				_pm->currentCluster++;
-				if (_pm->currentCluster >= _pm->clusters.size()) {
-					_pm->currentCluster = 0;
-				}
-				_pm->clustersChanged = true;
-			}
-			if (mode == Mode::PATHSIZE) {
-				_pm->pathlineMin += 0.04;
-			}
-			if (mode == Mode::SIMILARITY) {
+			else if (mode == Mode::SIMILARITY) {
 				_similarityCount *= 1.2;
 				_pm->ExpandClosestPoints(_similarityCount);
 			}
 		}
 		else if (eventname == "KbdLeft_Down") {
-			if (mode == Mode::SLICES) {
-				_slicer->addGap(-0.0025);
-				_pm->SetFilter(_slicer);
-			}
-			else if (mode == Mode::PATHSIZE) {
-				_pm->pathlineMax -= 0.04;
-			}
-			else if (mode == Mode::SIMILARITY) {
-				_similarityGo = true;
-				mode = Mode::STANDARD;
+			if (mode == Mode::SIMILARITY) {
+				
 			}
 			else {
 				ac.stepBackward();
@@ -696,14 +540,7 @@ public:
 			}
 		}
 		else if (eventname == "KbdRight_Down" ) {
-			if (mode == Mode::SLICES) {
-				_slicer->addGap(.0025);
-				_pm->SetFilter(_slicer);
-			}
-			else if (mode == Mode::PATHSIZE) {
-				_pm->pathlineMax += 0.04;
-			}
-			else if (mode == Mode::SIMILARITY) {
+			if (mode == Mode::SIMILARITY) {
 				_pm->colorPathsBySimilarity = !_pm->colorPathsBySimilarity;
 			}
 			else {
@@ -728,20 +565,39 @@ public:
 				ac.play();
 			}
 		}
-		//_omw. This is being updated if someone moves the omw locally
-		else if (eventname == "OMWPose") {
-			const std::vector<float> *v = event.getValue("Transform");
-			_owm = glm::make_mat4(&(v->front()));
-		}
-		//_slideMat. This is being updated if someone moves the _slideMat locally
-		else if (eventname == "SlideMat") {
-			const std::vector<float> *v = event.getValue("Transform");
-			_slideMat = glm::make_mat4(&(v->front()));
-		}
-		//cuttingPlane. This is being updated if someone moves the cuttingPlane locally
+
+		//cuttingPlane. This is being updated if someone moves the cuttingPlane
 		else if (eventname == "CuttingPlane") {
 			const std::vector<float> *v = event.getValue("Vector");
 			cuttingPlane = glm::make_vec4(&(v->front()));
+		}
+
+		//CursorMat. This is being updated when someone takes control over the cursor
+		else if (eventname == "CursorMat") {
+			const std::vector<float> *v = event.getValue("Transform");
+			_cursorMat = glm::make_mat4(&(v->front()));
+		}
+		//WandTip. This is being updated when someone control over the cursor. If not the wandtip is updated through the local wand movement
+		else if (event.getName() == "WandTip") {
+			const std::vector<float> *v = event.getValue("Vector");
+			_wandTip = glm::make_vec4(&(v->front()));
+		}
+		//FindClosestPoints. This is being used to find the closest points with the same input for all user
+		else if (event.getName() == "FindClosestPoints") {
+			const std::vector<float> *v = event.getValue("wand");
+			glm::vec4 wt = glm::make_vec4(&(v->front()));
+			float t = event.getValue("time");
+			int count = event.getValue("similarityCount");
+			_pm->FindClosestPoints(glm::vec3(wt), t, count);
+			mode = Mode::STANDARD;
+		}
+		//This signals that someone took control over the cursor and draws it for all users
+		else if (event.getName() == "drawCursorOn") {
+			drawCursor = true;
+		}
+
+		else if (event.getName() == "drawCursorOff") {
+			drawCursor = false;
 		}
 	}
 
@@ -847,66 +703,25 @@ public:
 
 	// Callback for event handling, inherited from VREventHandler
 	void onVREvent(const VRDataIndex &event) {
+
 		//checking Frame timing - not syncronized
 		if (event.getName() == "FrameStart") {
 			setElapsedSeconds(event.getValue("ElapsedSeconds"));
 		}
 
-		//Global events - these are syncronized and should be whitelisted for sending all users
+		//Global events - these events are received by all users and should be syncronized. They therefore should be whitelisted for the Photonplugin
 		handleGlobalEvents(event);
 
-		//These are events which determine rendering settings or enable or disable some modes which set the matrices or vertices
-		//They should not be whitelisted
-		//e.g. _moving, _movingSlide or _slice_mode .In this way they can be set be multiple participants.
-		//The matrices are then seperately set in the SlideMat, OMWPose or CuttingPlane events to update it for all participants if required
+		//These are events which determine local rendering settings or enable or disable modes, e.g. _moving, _movingSlide or _slice_mode. 
+		//The matrices are then seperately set in the different events to update it for all participants if required
 		handleLocalEvents(event);
-
-		//event to set the different matrices - Syncronized
-		//_currWandPos. This can so far only be set by one user and is sent out every loop
-		//The reason is that it is not clear which events need it and who should control it
-		if (event.getName() == "WandPose") {
-			const std::vector<float> *v = event.getValue("Transform");
-			_currWandPos = glm::make_mat4(&(v->front()));
-		}
-		//local wand event - does not need to be syncronized, but emits an events if it does require syncronization :  _moving, _movingSlide,_slice_mode
-		//it currently emits WandPose for every loop. This should only be whitelisted for one user
-		else if (event.getName() == "Wand0_Move" || event.getName() == rcontrol + "_Move") { //Set up for Wand Movement
-			std::vector<float> h = event.getValue("Transform");
-			glm::mat4 wandPos = glm::mat4(h[0], h[1], h[2], h[3],
-				h[4], h[5], h[6], h[7],
-				h[8], h[9], h[10], h[11],
-				h[12], h[13], h[14], h[15]);
-			if (_moving) {
-				_owm = wandPos / _lastWandPos * _owm; // update the model matrix for the data points
-				addTransformEvent("OMWPose", glm::value_ptr(_lastWandPos));
-				//event to update _owm
-			}
-			if (_movingSlide) {
-				_slideMat = wandPos / _lastWandPos * _slideMat; //update the model matrix for slide
-				//event to update _slideMat
-				addTransformEvent("SlideMat", glm::value_ptr(_lastWandPos));
-			}
-			_cursorMat = wandPos;
-			_lastWandPos = wandPos;
-
-			if (_slice_mode == SLICE) {
-				glm::vec3 up = glm::vec3(_currWandPos[1]);
-				up = glm::normalize(up);
-				glm::vec3 modelUp = glm::inverse(getModelMatrix()) * glm::vec4(up, 0.0);
-				float offset = -glm::dot(glm::vec3(getModelPos()), modelUp);
-				glm::vec4 cuttingPlane_tmp = glm::vec4(modelUp.x, modelUp.y, modelUp.z, offset);
-				addVectorEvent("CuttingPlane", glm::value_ptr(cuttingPlane_tmp));
-			}
-			
-			//This is the biggest problem so far - when and who is allowed to send the WandPose
-			//or when should it be local?
-			addTransformEvent("WandPose", glm::value_ptr(_lastWandPos));
-		}
 	}
 
 	virtual void onVRRenderContext(const VRDataIndex &renderState) {
+		//This is called once per render cycle so we update the animation here
 		time = ac.getFrame(); //update time frame
 
+		//in case it runs the first time initialize glew and other things
 		if ((int)renderState.getValue("InitRender") == 1) {
 			//setting up
 			glewExperimental = GL_TRUE;
@@ -934,21 +749,18 @@ public:
 
 	int count;
 
+	//This is just static and hardcided and sets a fixed translation and scale. 
+	//This is globally the same for all users
 	glm::mat4 getModelMatrix() {
 		glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(_scale, _scale, _scale));
 		glm::mat4 translate = glm::translate(glm::mat4(), glm::vec3(1, -1, 0));
-		//M is identity matrix. Or even worse depending on glm version not defined.
-		//I am removing it.
-		//glm::mat4 M = _owm * M * translate * scale;
-		//glm::mat4 MVP = P * V * M;
-		glm::mat4 M = _owm * translate * scale;
+		glm::mat4 M = translate * scale;
 		return M;
 	}
 
-	//This is not the ModelPos even if it is named like this
-	//I think this is the Wandposition in Modelcioordinates
-	glm::vec4 getModelPos() {
-		glm::mat4 newWandPos = glm::translate(_currWandPos, glm::vec3(0.0f, 0.0f, -1.0f));
+	//This returns the wand position for the current user in model coordinates
+	glm::vec4 getWandtipInModel(){
+		glm::mat4 newWandPos = glm::translate(glm::inverse(_owm) *_wandPos, glm::vec3(0.0f, 0.0f, -1.0f));
 		glm::vec3 location = glm::vec3(newWandPos[3]);
 		glm::vec4 modelPos = glm::inverse(getModelMatrix()) * glm::vec4(location, 1.0);
 		return modelPos;
@@ -972,10 +784,6 @@ public:
 		glCheckError();
 
 		glm::mat4 V, P;
-		
-		// NOTE: I removed the normal camera as it was not usable. 
-		// For desktop it is recommended to use the minvr way to control the camera 
-		//In that way it always contains a ProjectionMatrix and a ViewMatrix
 
 		// This is the typical case where the MinVR DisplayGraph contains
 		// an OffAxisProjectionNode or similar node, which sets the
@@ -986,70 +794,46 @@ public:
 		const std::vector<float> *v = stateData.getValue("ViewMatrix");
 		V = glm::make_mat4(&(v->front()));
 
-		// In the original adaptee.cpp program, keyboard and mouse commands
-		// were used to adjust the camera.  Now that we are creating a VR
-		// program, we want the camera (Projection and View matrices) to
-		// be controlled by head tracking.  So, we switch to having the
-		// keyboard and mouse control the Model matrix.  Guideline: In VR,
-		// put all of the "scene navigation" into the Model matrix and
-		// leave the Projection and View matrices for head tracking.	
-
-		glm::mat4 MVP = P * V *  getModelMatrix();
-		glm::mat4 t = V;
-
-		//These are basically updates of the scene and should not be here as
-		//this is not dependent on the eyeposition. These should either go to the OnRenderContext or even to the events
+		//Here some info on the matrices
+		//P = Projection
+		//V = View in HMD coordinate system, e.g. due to head movement
+		//_omw = position and orientation for the local user. Not the same for all users
+		//getModelMatrix = global scale and translation for all users the same 
+		glm::mat4 MVP = P * V * _owm * getModelMatrix();
 		{
-			//These parts are all dependent on the modelPos
-			//It should be thought of when these need updating. Who can control it - Global state vs local visualization
-			//right now this limits the control of these to 1 user as it needs to resend the WandPose for every loop
+			//It should be reconsidered how the interaction works and how points are selected. Right now it works through the wandpos, but it might be better to just send the id.
+			int id = _pm->TempPathline(_wandTip, time);
 
-			glm::vec3 modelPos = getModelPos();
-			int id = _pm->TempPathline(modelPos, time);
-
+			//JN 20201019: We should consider to remove the _board visualization entirely.
+			//It's the big number board that we implemented instead of adding actual 3D text rendering. It was a requested feature, but I don't think Steve and Morgan have ever used it to actually look up a particle ID during exploration.
 			_board.LoadID(id);
 			_board.LoadNumber(_similarityCount);
+
 			if (mode == Mode::SIMILARITY) {
 				_board.LoadID(id);
 				_board.LoadNumber(_similarityCount);
 			}
-			//this code will never be reached as _placePathline is always false
-			//if (_placePathline) {
-			//	_placePathline = false;
-			//	if (mode == Mode::PREDICT) {
-			//		_pm->ShowCluster(modelPos, time);
-			//	}
-			//	else {
-			//		_pm->AddPathline(modelPos, time);
-			//	}
-			//}
-			if (_placeClusterSeed) {
-				_pm->ShowCluster(modelPos, time);
-			}
-			//These are basically actions which are executed once. 
-			//It would be better if they are triggered somewhere else when the action starts
-			if (_similarityGo) {
-				_similarityGo = false;
-				_pm->FindClosestPoints(glm::vec3(modelPos), time, (int)_similarityCount);
-			}
-			if (_similarityPreset) {
-				_similarityPreset = false;
-				_pm->FindClosestPoints(_similarityId, (int)_similarityCount);
-			}
 		}
 
-		//Basic Drawing
 		glCheckError();
 
-		_pm->Draw(time, MVP, V*getModelMatrix(), P, cuttingPlane);
+		//Here the model is drawn
+		_pm->Draw(time, MVP, V * _owm * getModelMatrix(), P, cuttingPlane);
 
 		if (showFoot) {
 			_fmv.Draw(time, MVP);
 		}
 		glCheckError();
 
-		glm::mat4 m = P * V * _cursorMat; // _cursorMat is basically the last_wandPos
+		//This draws the local cursor
+		glm::mat4 m = P * V * _wandPos; 
 		_cursor.Draw(m);
+
+		//This draws the cursor in case another user took control over it
+		if (drawCursor) {
+			m = P * V * _owm *  _cursorMat; 
+			_cursor.Draw(m);
+		}
 
 		glCheckError();
 	}
@@ -1079,11 +863,12 @@ protected:
 	AnimationController ac;
 	bool _moving = false;
 	bool _placePathline = false;
-	bool _placeClusterSeed = false;
 	SliceFilter* _slicer;
 	glm::mat4 _owm, _owmDefault;
-	glm::mat4 _lastWandPos;
-	glm::mat4 _currWandPos;
+	glm::mat4 _wandPos;
+	glm::mat4 _cursorMat = glm::mat4(1.0);
+	bool drawCursor = false;
+	bool controlCursor = false;
 	FootMeshViewer _fmv;
 	bool showFoot = true;
 	WebUpdateReader* _wur;
@@ -1092,12 +877,9 @@ protected:
 	Slide _slide;
 	Textboard _board;
 	Cursor _cursor;
-	glm::mat4 _slideMat;
-	glm::mat4 _cursorMat;
-	bool _movingSlide = false;
+	glm::vec3 _wandTip;
 	double _similarityCount = 50;
 	bool _similarityGo = false;
-	bool _similarityPreset = false;
 	int _similarityId = -1;
 	std::string rcontrol = "";
 	std::string lcontrol = "";
