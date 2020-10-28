@@ -77,7 +77,12 @@ enum SLICEMODE {
 	SLICE_HOLD
 };
 
-enum struct Mode { STANDARD, SIMILARITY };
+//The only tested and used modes for collaborative mode are STANDARD and SIMILARITY
+//For the others I added the code back in and tried to add as much support for it. 
+//But as i do not know how it should work and if it is still used code I did not test its integration
+
+enum struct Mode { STANDARD, ANIMATION, FILTER, SLICES, PREDICT, CLUSTER, PATHSIZE, SIMILARITY };
+
 
 class MyVRApp : public VREventHandler, public VRRenderHandler, public UpdateChecker, public VRInputDevice {
 public:
@@ -104,8 +109,19 @@ public:
 
 		_pm = new PointManager(); //initializes a point manager
 		_pm->ReadFile(_config->GetValue("Data", "active-dataset.out"));
+		//_pm->ReadDistances(_config->GetValue("Distances", "distances.out"));
 		printf("Loaded file with %d timesteps.\n", _pm->getLength());
 		std::cout << _pm->getLength() << std::endl;
+
+		//_pm->ReadMoVMFs("paths.movm");
+		/*std::string clusterFile = _config->GetValue("Clusters", "active.clusters");
+		if (clusterFile != ""){
+		  _pm->ReadClusters(clusterFile);
+		}
+		std::string pathlineFile = _config->GetValue("Pathlines", "active.pathlines");
+		if (pathlineFile != ""){
+		  _pm->ReadPathlines(pathlineFile);
+		}*/
 
 		_pm->colorByCluster = true;
 		_pm->simEval = new PathAlignmentSimilarityEvaluator();
@@ -215,6 +231,142 @@ public:
 		}
 	}
 
+	//This function was put back on Davids request and I am not sure if it still works as there was no data available to test
+	void loadStuff1() {
+		std::ofstream file;
+		file.open(presets[currentPreset]);
+		if (file.good()) {
+			for (int i = 0; i < 4; i++) {
+				for (int j = 0; j < 4; j++) {
+					file << _owm[i][j] << " ";
+				}
+			}
+			file << std::endl;
+			file << _pm->showSurface << _pm->surfaceMode << std::endl;
+			file << _pm->pointSize << std::endl;
+			file << (_pm->layers & LAYER1) << " " << (_pm->layers & LAYER2) << " " << (_pm->layers & LAYER3) << " " << (_pm->layers & LAYER4) << std::endl;
+			file << _fmv.showStained << _fmv.sweepMode << std::endl;
+			if (_pm->similarityReset) {
+				file << -1 << 0 << std::endl;
+			}
+			else {
+				file << _pm->similaritySeedPoint << " " << _similarityCount << std::endl;
+			}
+			file << ac.getFrame();
+			file.close();
+		}
+	}
+	//This function was put back on Davids request and I am not sure if it still works as there was no data available to test
+	void loadStuff2() {
+		std::fstream file;
+		std::string line;
+		file.open(presets[currentPreset], std::ios::in);
+		if (file.good()) {
+
+			std::getline(file, line);
+			std::istringstream iss(line);
+			float m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16;
+			iss >> m1 >> m2 >> m3 >> m4 >> m5 >> m6 >> m7 >> m8 >> m9 >> m10 >> m11 >> m12 >> m13 >> m14 >> m15 >> m16;
+			_owm = glm::mat4(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16);
+
+			std::getline(file, line);
+			std::istringstream iss0(line);
+			int showsurf, surfmod;
+			iss0 >> showsurf;
+			if (showsurf == 1) {
+				_pm->showSurface = true;
+			}
+			else {
+				_pm->showSurface = false;
+			}
+			_pm->surfaceMode = surfmod;
+
+			std::getline(file, line);
+			std::istringstream iss2(line);
+			float pointsize;
+			iss2 >> pointsize;
+			_pm->pointSize = pointsize;
+
+			std::getline(file, line);
+			std::istringstream iss3(line);
+			int l1, l2, l3, l4;
+			iss3 >> l1 >> l2 >> l3 >> l4;
+			_pm->layers = l1 + l2 + l3 + l4;
+
+			std::getline(file, line);
+			std::istringstream iss4(line);
+			int showsweep, sweepmod;
+			iss4 >> showsweep >> sweepmod;
+			if (showsweep == 1) {
+				_fmv.showStained = true;
+			}
+			else {
+				_fmv.showStained = false;
+			}
+			_fmv.sweepMode = sweepmod;
+
+			std::getline(file, line);
+			std::istringstream iss5(line);
+			int id;
+			float count;
+			iss5 >> id >> count;
+
+			_pm->ClearPathlines();
+			_pm->ResetPrediction();
+			_pm->clustering = false;
+			_pm->currentCluster = -1;
+			_pm->drawAllClusters = false;
+			_pm->pathlineMin = 0.0;
+			_pm->pathlineMax = 1.0;
+			_pm->colorBySimilarity = false;
+
+			if (id > -1) {
+				_similarityId = id;
+				_similarityCount = count;
+			}
+
+			std::getline(file, line);
+			std::istringstream iss6(line);
+			int frame;
+			iss6 >> frame;
+			if (frame > -1) {
+				ac.setFrame(frame);
+			}
+			ac.pause();
+
+			file.close();
+
+			if (id > -1) {
+				//I moved this function here as it is not dependent on any parameter in the drawing function
+				_pm->FindClosestPoints(_similarityId, (int)_similarityCount);
+			}
+		}
+		else {
+			_owm = _owmDefault;
+			_pm->showSurface = false;
+			_fmv.showStained = false;
+			_fmv.sweepMode = 0;
+			_pm->pointSize = 0.0004;
+			_pm->surfaceMode = 0;
+
+			_pm->ClearPathlines();
+			_pm->ResetPrediction();
+			_pm->clustering = false;
+			_pm->currentCluster = -1;
+			_pm->drawAllClusters = false;
+			_pm->pathlineMin = 0.0;
+			_pm->pathlineMax = 1.0;
+			_pm->colorBySimilarity = false;
+
+			_pm->layers = 0;
+
+			ac.setFrame(0);
+			ac.pause();
+		}
+	}
+
+
+
 	void setPreset(int preset) {
 		if (preset >= 5) {
 			currentPreset = 0;
@@ -271,17 +423,37 @@ public:
 
 		//This is the event to trigger the selection of the closest points.
 		//It needed to be remapped from KbdLeft_Down
-		if (event.getName() == "KbdC_Down") {
-			if (mode == Mode::SIMILARITY) {
-				VRDataIndex di("FindClosestPoints");
-				glm::vec4 wt = getWandtipInModel();
-				float* vec = glm::value_ptr(wt);
-				std::vector<float> t{ vec, vec + 4 };
-				di.addData("wand", t);
-				di.addData("time", time);
-				di.addData("similarityCount", (int) _similarityCount);
-				_events_out.push_back(di);
-			}
+		if (mode == Mode::SIMILARITY && event.getName() == "KbdC_Down") {
+			VRDataIndex di("FindClosestPoints");
+			glm::vec4 wt = getWandtipInModel();
+			float* vec = glm::value_ptr(wt);
+			std::vector<float> t{ vec, vec + 4 };
+			di.addData("wand", t);
+			di.addData("time", time);
+			di.addData("similarityCount", (int) _similarityCount);
+			_events_out.push_back(di);
+		}
+
+		//Not tested. Not sure when this should be sent out
+		if (event.getName() == "NOTSET") {
+			VRDataIndex di("ShowCluster");
+			glm::vec4 wt = getWandtipInModel();
+			float* vec = glm::value_ptr(wt);
+			std::vector<float> t{ vec, vec + 4 };
+			di.addData("wand", t);
+			di.addData("time", time);
+			_events_out.push_back(di);
+		}
+
+		//Not tested. Not sure when this should be sent out
+		if (event.getName() == "NOTSET") {
+			VRDataIndex di("AddPathline");
+			glm::vec4 wt = getWandtipInModel();
+			float* vec = glm::value_ptr(wt);
+			std::vector<float> t{ vec, vec + 4 };
+			di.addData("wand", t);
+			di.addData("time", time);
+			_events_out.push_back(di);
 		}
 
 		//This is how someone can propagate its cursor and its wandtip
@@ -305,6 +477,12 @@ public:
 			//if in moving mode we update the local view of the model (owm)
 			if (_moving) {
 				_owm = new_wandPos / _wandPos * _owm;
+			}
+			//This is not tested
+			if (_movingSlide) {
+				glm::mat4 sm = glm::inverse(_owm) * (new_wandPos / _wandPos * _slideMat); //update the model matrix for slide
+				//event to update _slideMat
+				addTransformEvent("SlideMat", glm::value_ptr(sm));
 			}
 
 			//if in slicing mode we update the slice transformation in model coordinates
@@ -363,7 +541,11 @@ public:
 			_moving = false;
 		}
 		//This is used to release the holds for playback. Playback should be implemented differently
+		else if (eventname == "Wand_Joystick_Press_Down") {
+			_movingSlide = true;
+		}
 		else if (eventname == "Wand_Joystick_Press_Up") {
+			_movingSlide = false;
 			addKeyEvent("ReleaseHolds");
 		}
 		//These are local trigger events and only affect the trigger
@@ -434,6 +616,7 @@ public:
 			printf("moving to standard mode\n");
 		}
 		if (eventname == "KbdZ_Down") {
+			//_fmv.sweepMode = ((_fmv.sweepMode + 1) % 6);
 			mode = Mode::SIMILARITY;
 			printf("moving to cluster mode\n");
 		}
@@ -449,19 +632,31 @@ public:
 		else if (eventname == "Kbd4_Down") {
 			_pm->layers ^= LAYER4;
 		}	
+		else if (eventname == "Kbd5_Down") {
+			//_pm->SetShaders();
+		}
 		else if (eventname == "Kbd7_Down") {
+			//_pm->colorPathsBySimilarity = !_pm->colorPathsBySimilarity;
+			//_slicingHold = !_slicingHold;
 			_pm->distMode = ((_pm->distMode + 1) % 4);
 		}
 		else if (eventname == "KbdV_Down") {
+			//mode = Mode::SIMILARITY;
 			_fmv.showOldModel = !_fmv.showOldModel;
+			//_pm->clustering = true;
+			//_pm->ClearPathlines();
+			//mode = Mode::SLICES;
+			//_pm->SetFilter(_slicer);
 		}
 		else if (eventname == "KbdB_Down") {
+			//_fmv.showNewModel = !_fmv.showNewModel;
 			_fmv.showStained = !_fmv.showStained;
 		}
 		else if (eventname == "KbdN_Down") {
 			_pm->distFalloff += 0.002;
 		}
 		else if (eventname == "KbdM_Down") {
+			//_fmv.showCloud = !_fmv.showCloud;
 			_pm->distFalloff -= 0.002;
 		}
 		else if (eventname == "KbdS_Down") {
@@ -488,15 +683,37 @@ public:
 		else if (eventname == "KbdQ_Down") {
 			reset();
 		}
+		//Not sure if this works
+		else if (eventname == "KbdT_Down") {
+			//_pm->surfTrail = !_pm->surfTrail;
+			loadStuff1();
+		}
+		//not sure if this works
+		else if (eventname == "KbdR_Down") {
+			loadStuff2();
+		}
 		else if (eventname == "Mouse_Up_Down") {
+			//mode = Mode::STANDARD;
+			//printf("moving to standard\n");
 			if (mode == Mode::STANDARD) {
 				_fmv.showStained = !_fmv.showStained;
 			}
 		}
 		else if (eventname == "Mouse_Down_Down") {
+			//mode = Mode::CLUSTER;
+			//mode = Mode::ANIMATION;
+			//mode = Mode::PATHSIZE;
+			/*_pm->colorByCluster = ! _pm->colorByCluster;
+			_pm->colorBySimilarity = !_pm->colorBySimilarity;
+			if(_slicing){
+			  _pm->cutOnOriginal = !_pm->cutOnOriginal;
+			}*/
+
 			_fmv.sweepMode = ((_fmv.sweepMode + 1) % 6);
 		}
 		else if (eventname == "Mouse_Left_Down") {
+			//mode = Mode::FILTER;
+			//_pm->SetFilter(new MotionFilter(motionThreshold));
 			if (mode == Mode::STANDARD) {
 				_pm->showSurface = !_pm->showSurface;
 			}
@@ -516,23 +733,81 @@ public:
 			if (mode == Mode::STANDARD) {
 				_pm->pointSize /= 1.3;
 			}
-			else if (mode == Mode::SIMILARITY) {
+			if (mode == Mode::ANIMATION) {
+				ac.decreaseSpeed();
+			}
+			if (mode == Mode::SLICES) {
+				_slicer->addStart(.001);
+				_pm->SetFilter(_slicer);
+			}
+			if (mode == Mode::FILTER) {
+				motionThreshold *= 1.414;
+				_pm->SetFilter(new MotionFilter(motionThreshold));
+			}
+			if (mode == Mode::PREDICT) {
+				//_pm->SearchForSeeds();
+				//This was removed by the events for ShowCluster and AddPathLine. It should be decided when they are being sent as a local event
+				
+			}
+			if (mode == Mode::CLUSTER && iterateClusters) {
+				_pm->currentCluster--;
+				if (_pm->currentCluster < 0) {
+					_pm->currentCluster = _pm->clusters.size() - 1;
+				}
+				_pm->clustersChanged = true;
+			}
+			if (mode == Mode::PATHSIZE) {
+				_pm->pathlineMin -= 0.04;
+			}
+			if (mode == Mode::SIMILARITY) {
 				_similarityCount /= 1.2;
 				_pm->ExpandClosestPoints(_similarityCount);
 			}
+
 		}
 		else if (eventname == "KbdUp_Down") {
-			if (mode == Mode::STANDARD) {
-				_pm->pointSize *= 1.3;
+		if (mode == Mode::STANDARD) {
+			_pm->pointSize *= 1.3;
+		}
+		if (mode == Mode::ANIMATION) {
+			ac.increaseSpeed();
+		}
+		if (mode == Mode::SLICES) {
+			_slicer->addStart(-.001);
+			_pm->SetFilter(_slicer);
+		}
+		if (mode == Mode::FILTER) {
+			motionThreshold /= 1.414;
+			_pm->SetFilter(new MotionFilter(motionThreshold));
+		}
+		if (mode == Mode::PREDICT) {
+			//This was removed by the events for ShowCluster and AddPathLine. It should be decided when they are being sent as a local event
+		}
+		if (mode == Mode::CLUSTER && iterateClusters) {
+			_pm->currentCluster++;
+			if (_pm->currentCluster >= _pm->clusters.size()) {
+				_pm->currentCluster = 0;
 			}
-			else if (mode == Mode::SIMILARITY) {
-				_similarityCount *= 1.2;
-				_pm->ExpandClosestPoints(_similarityCount);
-			}
+			_pm->clustersChanged = true;
+		}
+		if (mode == Mode::PATHSIZE) {
+			_pm->pathlineMin += 0.04;
+		}
+		if (mode == Mode::SIMILARITY) {
+			_similarityCount *= 1.2;
+			_pm->ExpandClosestPoints(_similarityCount);
+		}
 		}
 		else if (eventname == "KbdLeft_Down") {
-			if (mode == Mode::SIMILARITY) {
-				
+			if (mode == Mode::SLICES) {
+				_slicer->addGap(-0.0025);
+				_pm->SetFilter(_slicer);
+			}
+			else if (mode == Mode::PATHSIZE) {
+				_pm->pathlineMax -= 0.04;
+			}
+			else if (mode == Mode::SIMILARITY) {
+				//This was replaced with the FindClosestPoints event
 			}
 			else {
 				ac.stepBackward();
@@ -540,7 +815,14 @@ public:
 			}
 		}
 		else if (eventname == "KbdRight_Down" ) {
-			if (mode == Mode::SIMILARITY) {
+			if (mode == Mode::SLICES) {
+				_slicer->addGap(.0025);
+				_pm->SetFilter(_slicer);
+			}
+			else if (mode == Mode::PATHSIZE) {
+				_pm->pathlineMax += 0.04;
+			}
+			else if (mode == Mode::SIMILARITY) {
 				_pm->colorPathsBySimilarity = !_pm->colorPathsBySimilarity;
 			}
 			else {
@@ -590,6 +872,25 @@ public:
 			int count = event.getValue("similarityCount");
 			_pm->FindClosestPoints(glm::vec3(wt), t, count);
 			mode = Mode::STANDARD;
+		}
+		//This is not tested. It should be decided when the events are being sent out
+		else if (event.getName() == "ShowCluster") {
+			const std::vector<float> *v = event.getValue("wand");
+			glm::vec4 wt = glm::make_vec4(&(v->front()));
+			float t = event.getValue("time");
+			_pm->ShowCluster(wt, t);
+		}
+		//This is not tested. It should be decided when the events are being sent out
+		else if (event.getName() == "AddPathline") {
+			const std::vector<float> *v = event.getValue("wand");
+			glm::vec4 wt = glm::make_vec4(&(v->front()));
+			float t = event.getValue("time");
+			_pm->AddPathline(wt, t);
+		}
+		//This is not tested
+		else if (eventname == "SlideMat") {
+			const std::vector<float> *v = event.getValue("Transform");
+			_slideMat = glm::make_mat4(&(v->front()));
 		}
 		//This signals that someone took control over the cursor and draws it for all users
 		else if (event.getName() == "drawCursorOn") {
@@ -813,6 +1114,23 @@ public:
 				_board.LoadID(id);
 				_board.LoadNumber(_similarityCount);
 			}
+
+			//this code was never reached and is not needed anymore. 
+			//It was removed by the events for ShowCluster and AddPathLine. 
+			//It should be decided when they are being sent as a local event
+			//Until then i leave the code in here as a clue. Do not uncomment
+			/*if (_placePathline) {
+				_placePathline = false;
+				if (mode == Mode::PREDICT) {
+					_pm->ShowCluster(modelPos, time);
+				}
+				else {
+					_pm->AddPathline(modelPos, time);
+				}
+			}
+			if (_placeClusterSeed) {
+				_pm->ShowCluster(modelPos, time);
+			}*/
 		}
 
 		glCheckError();
@@ -828,6 +1146,10 @@ public:
 		//This draws the local cursor
 		glm::mat4 m = P * V * _wandPos; 
 		_cursor.Draw(m);
+
+		//Not tested as i do not know how it is supposed to be used
+		//glm::mat4 slideM = _slideMat * M;
+		//_slide.Draw(P * V * _owm * _slideMat * getModelMatrix());
 
 		//This draws the cursor in case another user took control over it
 		if (drawCursor) {
@@ -867,6 +1189,8 @@ protected:
 	glm::mat4 _owm, _owmDefault;
 	glm::mat4 _wandPos;
 	glm::mat4 _cursorMat = glm::mat4(1.0);
+	bool _movingSlide = false;
+	glm::mat4 _slideMat;
 	bool drawCursor = false;
 	bool controlCursor = false;
 	FootMeshViewer _fmv;
@@ -879,7 +1203,6 @@ protected:
 	Cursor _cursor;
 	glm::vec3 _wandTip;
 	double _similarityCount = 50;
-	bool _similarityGo = false;
 	int _similarityId = -1;
 	std::string rcontrol = "";
 	std::string lcontrol = "";
