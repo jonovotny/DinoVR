@@ -28,10 +28,10 @@
 		
 			<Photon inputdeviceType="VRPhotonDevice">
 				<AppName>MinVR</AppName>
-				<AppID>34ea9e3d-81ee-4390-81c9-ebb9d8a5591e</AppID>
+				<AppID>-------------------------</AppID>
 				<AppVersion>1.0</AppVersion>
 				<PlayerName>Controller</PlayerName>
-				<Whitelist type="stringarray">CursorMat,drawCursorOn,drawCursorOff,FindClosestPoints,WandTip,ReleaseHolds,Animation,CuttingPlane,Mouse_Up_Down,Mouse_Down_Down,Mouse_Left_Down,Mouse_Right_Down,KbdDown_Down,KbdUp_Down,KbdLeft_Down,KbdRight_Down,KbdU_Down,KbdI_Down,KbdJ_Down,KbdK_Down,KbdO_Down,KbdL_Down,KbdF_Down,KbdG_Down,KbdP_Down,KbdX_Down,KbdZ_Down,Kbd1_Down,Kbd2_Down,Kbd3_Down,Kbd4_Down,Kbd7_Down,KbdV_Down,KbdB_Down,KbdN_Down,KbdM_Down,KbdS_Down,KbdT_Down,KbdI_Down,KbdK_Down,KbdU_Down,KbdJ_Down,KbdR_Down,KbdW_Down,KbdE_Down,KbdQ_Down</Whitelist>	
+				<Whitelist type="stringarray">SlideMat,ShowCluster,AddPathline,CursorMat,drawCursorOn,drawCursorOff,FindClosestPoints,WandTip,ReleaseHolds,Animation,CuttingPlane,Mouse_Up_Down,Mouse_Down_Down,Mouse_Left_Down,Mouse_Right_Down,KbdDown_Down,KbdUp_Down,KbdLeft_Down,KbdRight_Down,KbdU_Down,KbdI_Down,KbdJ_Down,KbdK_Down,KbdO_Down,KbdL_Down,KbdF_Down,KbdG_Down,KbdP_Down,KbdX_Down,KbdZ_Down,Kbd1_Down,Kbd2_Down,Kbd3_Down,Kbd4_Down,Kbd7_Down,KbdV_Down,KbdB_Down,KbdN_Down,KbdM_Down,KbdS_Down,KbdT_Down,KbdI_Down,KbdK_Down,KbdU_Down,KbdJ_Down,KbdR_Down,KbdW_Down,KbdE_Down,KbdQ_Down</Whitelist>	
 			</Photon>
 			
 			<GLFWToolkit windowtoolkitType="VRGLFWWindowToolkit"/>
