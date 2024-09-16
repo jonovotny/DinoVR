@@ -155,7 +155,7 @@ if (NOT ${glm_FOUND})
     ExternalProject_Download(
         glm 
         GIT_REPOSITORY "https://github.com/g-truc/glm.git" 
-        GIT_TAG 0.9.9.6
+        GIT_TAG 1.0.1
     )
     ExternalProject_BuildAndInstallNow(
         glm
@@ -163,7 +163,7 @@ if (NOT ${glm_FOUND})
     )
 
     message(STATUS "Searching (again, right after autobuilding) for GLM...")
-    find_package(glm CONFIG)
+    find_package(glm CONFIG REQUIRED)
 
     if (NOT ${glm_FOUND})
         message(FATAL_ERROR "GLM was autobuilt for you, and it should now be installed at the prefix ${CMAKE_INSTALL_PREFIX}, but cmake is still unable to find it with find_package().")
@@ -173,8 +173,10 @@ endif()
 
 
 # At this point, one or the other version of find_package() succeeded.
+set(GLM_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include)
+add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 message(STATUS ${GLM_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PUBLIC glm)
+target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm)
 target_include_directories(${PROJECT_NAME} PUBLIC ${GLM_INCLUDE_DIRS})
 
 
