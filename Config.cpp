@@ -26,6 +26,11 @@ void Config::AddEntry(std::string key, std::string value){
 
 void Config::ReadFile(std::string fileName){
   std::ifstream stream (fileName.c_str());
+  if(!stream)
+  {
+      std::cerr << "Error opening file!" << std::endl;
+      return;
+  }
   std::string line;
   std::string key, value;
   while(std::getline(stream, line)){

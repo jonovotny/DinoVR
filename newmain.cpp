@@ -77,7 +77,8 @@ enum struct Mode {STANDARD, ANIMATION, FILTER, SLICES, PREDICT, CLUSTER, PATHSIZ
 
 class MyVRApp : public VREventHandler, public VRRenderHandler, public UpdateChecker {
 public:
-  MyVRApp(int argc, char** argv) : _vrMain(NULL), _quit(false), first(true) {
+  MyVRApp(int argc, char** argv) : _vrMain(NULL), _quit(false), first(true), _owm(glm::mat4(1.0f)),
+      _lastWandPos(glm::mat4(1.0f)), _radius(1.0f) {
 		_vrMain = new VRMain();
         _vrMain->initialize(argc, argv);
       	_vrMain->addEventHandler(this);
@@ -263,8 +264,8 @@ public:
       _pm->surfaceMode = ((_pm->surfaceMode + 1) % 5);
     }   
     if (event.getName() == "KbdT_Down"){
-      //_pm->surfTrail = !_pm->surfTrail;
-		ofstream file;
+      //_pm->surfTrail = !_pm->survfTrail;
+		std::ofstream file;
 		file.open(presets[currentPreset]);
 		if (file.good()) {
 			for (int i = 0; i < 4; i++) {
@@ -843,7 +844,7 @@ public:
 			//glClear(GL_DEPTH_BUFFER_BIT);
       glCheckError();
 
-      glm::mat4 M, V, P;
+      glm::mat4 M(1.0f), V, P;
       glm::mat4 MVP;
 	 // std::cout << stateData.printStructure() << std::endl;
       if (stateData.exists("ProjectionMatrix","/")) {
@@ -888,7 +889,9 @@ public:
 
       glm::mat4 MMtrans = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -_radius));
 	  glm::mat4 MMrotX = glm::rotate(MMtrans, _vertAngle, glm::vec3(1.0f, 0.0f, 0.0f));
- 	  glm::mat4 M = glm::rotate(MMrotX, _horizAngle, glm::vec3(0.0f, 1.0f, 0.0f)); 
+ 	  //  Original line
+      // glm::mat4 M = glm::rotate(MMrotX, _horizAngle, glm::vec3(0.0f, 1.0f, 0.0f)); 
+      M = glm::rotate(MMrotX, _horizAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 //	  std::cout << "M " << glm::to_string(M) << std::endl;
 
 	  V = glm::mat4(VV[0], VV[1], VV[2], VV[3],
@@ -916,8 +919,8 @@ public:
          
        }
 
-        glm::mat4 scale = glm::scale(glm::mat4(), glm::vec3(_scale, _scale, _scale));
-        glm::mat4 translate = glm::translate(glm::mat4(), glm::vec3(1, -1, 0));
+        glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(_scale, _scale, _scale));
+        glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(1, -1, 0));
          
 
         //in desktop mode, +x is away from camera, +z is right, +y is up 
@@ -928,7 +931,9 @@ public:
 //        printMat4(cursorM);
 //        std::cout << "slide" << std::endl;
 //        printMat4(slideM);
-        M = _owm * M * translate * scale;
+          M = _owm * M * translate * scale;
+         //M =  M * translate * scale;
+
         //V = glm::transpose(V);
         MVP = P * V * M;
         glm::mat4 t = V ;
