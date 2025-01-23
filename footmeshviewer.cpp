@@ -370,7 +370,7 @@ void FootMeshViewer::Draw(int time, glm::mat4 mvp){
 	  shader->bindShader();
 	  glCheckError();
 	  shader->setMatrix4("mvp", mvp);
-	  shader->setMatrix4("transform", glm::mat4());
+	  shader->setMatrix4("transform", glm::mat4(1.0f));
           shader->setVector4("col", glm::vec4(1.0, 0.7, 0.7, 1.0));
 	  glCheckError();
 
@@ -396,7 +396,7 @@ void FootMeshViewer::Draw(int time, glm::mat4 mvp){
 	  glCheckError();
 
 	  shader->setMatrix4("mvp", mvp);
-	  shader->setMatrix4("transform", glm::mat4());// transforms[time]);
+	  shader->setMatrix4("transform", glm::mat4(1.0f));// transforms[time]);
           shader->setVector4("col", glm::vec4(1.0, 1.0, 1.0, 1.0));
 	  glDrawArrays(GL_TRIANGLES, 0, metaNumElems);
 	  glCheckError();
